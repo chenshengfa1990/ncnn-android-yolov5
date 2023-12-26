@@ -187,89 +187,163 @@ static inline float sigmoid(float x)
     return static_cast<float>(1.f / (1.f + exp(-x)));
 }
 
+//static void generate_proposals(const ncnn::Mat& anchors, int stride, const ncnn::Mat& in_pad, const ncnn::Mat& feat_blob, float prob_threshold, std::vector<Object>& objects)
+//{
+//    const int num_grid = feat_blob.h;
+//
+//    int num_grid_x;
+//    int num_grid_y;
+//    if (in_pad.w > in_pad.h)
+//    {
+//        num_grid_x = in_pad.w / stride;
+//        num_grid_y = num_grid / num_grid_x;
+//    }
+//    else
+//    {
+//        num_grid_y = in_pad.h / stride;
+//        num_grid_x = num_grid / num_grid_y;
+//    }
+//
+//    const int num_class = feat_blob.w - 5;
+//
+//    const int num_anchors = anchors.w / 2;
+//
+//    for (int q = 0; q < num_anchors; q++)
+//    {
+//        const float anchor_w = anchors[q * 2];
+//        const float anchor_h = anchors[q * 2 + 1];
+//
+//        const ncnn::Mat feat = feat_blob.channel(q);
+//
+//        for (int i = 0; i < num_grid_y; i++)
+//        {
+//            for (int j = 0; j < num_grid_x; j++)
+//            {
+//                const float* featptr = feat.row(i * num_grid_x + j);
+//
+//                // find class index with max class score
+//                int class_index = 0;
+//                float class_score = -FLT_MAX;
+//                for (int k = 0; k < num_class; k++)
+//                {
+//                    float score = featptr[5 + k];
+//                    if (score > class_score)
+//                    {
+//                        class_index = k;
+//                        class_score = score;
+//                    }
+//                }
+//
+//                float box_score = featptr[4];
+//
+//                float confidence = sigmoid(box_score) * sigmoid(class_score);
+//
+//                if (confidence >= prob_threshold)
+//                {
+//                    // yolov5/models/yolo.py Detect forward
+//                    // y = x[i].sigmoid()
+//                    // y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
+//                    // y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+//
+//                    float dx = sigmoid(featptr[0]);
+//                    float dy = sigmoid(featptr[1]);
+//                    float dw = sigmoid(featptr[2]);
+//                    float dh = sigmoid(featptr[3]);
+//
+//                    float pb_cx = (dx * 2.f - 0.5f + j) * stride;
+//                    float pb_cy = (dy * 2.f - 0.5f + i) * stride;
+//
+//                    float pb_w = pow(dw * 2.f, 2) * anchor_w;
+//                    float pb_h = pow(dh * 2.f, 2) * anchor_h;
+//
+//                    float x0 = pb_cx - pb_w * 0.5f;
+//                    float y0 = pb_cy - pb_h * 0.5f;
+//                    float x1 = pb_cx + pb_w * 0.5f;
+//                    float y1 = pb_cy + pb_h * 0.5f;
+//
+//                    Object obj;
+//                    obj.x = x0;
+//                    obj.y = y0;
+//                    obj.w = x1 - x0;
+//                    obj.h = y1 - y0;
+//                    obj.label = class_index;
+//                    obj.prob = confidence;
+//
+//                    objects.push_back(obj);
+//                }
+//            }
+//        }
+//    }
+//}
+
 static void generate_proposals(const ncnn::Mat& anchors, int stride, const ncnn::Mat& in_pad, const ncnn::Mat& feat_blob, float prob_threshold, std::vector<Object>& objects)
 {
-    const int num_grid = feat_blob.h;
-
-    int num_grid_x;
-    int num_grid_y;
-    if (in_pad.w > in_pad.h)
-    {
-        num_grid_x = in_pad.w / stride;
-        num_grid_y = num_grid / num_grid_x;
-    }
-    else
-    {
-        num_grid_y = in_pad.h / stride;
-        num_grid_x = num_grid / num_grid_y;
-    }
-
-    const int num_class = feat_blob.w - 5;
+    const int num_w = feat_blob.w;
+    const int num_grid_y = feat_blob.c;
+    const int num_grid_x = feat_blob.h;
 
     const int num_anchors = anchors.w / 2;
+    const int walk = num_w / num_anchors;
+    const int num_class = walk - 5;
 
-    for (int q = 0; q < num_anchors; q++)
+    for (int i = 0; i < num_grid_y; i++)
     {
-        const float anchor_w = anchors[q * 2];
-        const float anchor_h = anchors[q * 2 + 1];
-
-        const ncnn::Mat feat = feat_blob.channel(q);
-
-        for (int i = 0; i < num_grid_y; i++)
+        for (int j = 0; j < num_grid_x; j++)
         {
-            for (int j = 0; j < num_grid_x; j++)
+
+            const float* matat = feat_blob.channel(i).row(j);
+
+            for (int k = 0; k < num_anchors; k++)
             {
-                const float* featptr = feat.row(i * num_grid_x + j);
-
-                // find class index with max class score
-                int class_index = 0;
-                float class_score = -FLT_MAX;
-                for (int k = 0; k < num_class; k++)
+                const float anchor_w = anchors[k * 2];
+                const float anchor_h = anchors[k * 2 + 1];
+                const float* ptr = matat + k * walk;
+                float box_confidence = ptr[4];
+                if (box_confidence >= prob_threshold)
                 {
-                    float score = featptr[5 + k];
-                    if (score > class_score)
+                    // find class index with max class score
+                    int class_index = 0;
+                    float class_score = -FLT_MAX;
+                    for (int c = 0; c < num_class; c++)
                     {
-                        class_index = k;
-                        class_score = score;
+                        float score = ptr[5 + c];
+                        if (score > class_score)
+                        {
+                            class_index = c;
+                            class_score = score;
+                        }
+                        float confidence = box_confidence * class_score;
+
+                        if (confidence >= prob_threshold)
+                        {
+                            float dx = ptr[0];
+                            float dy = ptr[1];
+                            float dw = ptr[2];
+                            float dh = ptr[3];
+
+                            float pb_cx = (dx * 2.f - 0.5f + j) * stride;
+                            float pb_cy = (dy * 2.f - 0.5f + i) * stride;
+
+                            float pb_w = powf(dw * 2.f, 2) * anchor_w;
+                            float pb_h = powf(dh * 2.f, 2) * anchor_h;
+
+                            float x0 = pb_cx - pb_w * 0.5f;
+                            float y0 = pb_cy - pb_h * 0.5f;
+                            float x1 = pb_cx + pb_w * 0.5f;
+                            float y1 = pb_cy + pb_h * 0.5f;
+
+                            Object obj;
+                            obj.x = x0;
+                            obj.y = y0;
+                            obj.w = x1 - x0;
+                            obj.h = y1 - y0;
+                            obj.label = class_index;
+                            obj.prob = confidence;
+
+                            objects.push_back(obj);
+
+                        }
                     }
-                }
-
-                float box_score = featptr[4];
-
-                float confidence = sigmoid(box_score) * sigmoid(class_score);
-
-                if (confidence >= prob_threshold)
-                {
-                    // yolov5/models/yolo.py Detect forward
-                    // y = x[i].sigmoid()
-                    // y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
-                    // y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
-
-                    float dx = sigmoid(featptr[0]);
-                    float dy = sigmoid(featptr[1]);
-                    float dw = sigmoid(featptr[2]);
-                    float dh = sigmoid(featptr[3]);
-
-                    float pb_cx = (dx * 2.f - 0.5f + j) * stride;
-                    float pb_cy = (dy * 2.f - 0.5f + i) * stride;
-
-                    float pb_w = pow(dw * 2.f, 2) * anchor_w;
-                    float pb_h = pow(dh * 2.f, 2) * anchor_h;
-
-                    float x0 = pb_cx - pb_w * 0.5f;
-                    float y0 = pb_cy - pb_h * 0.5f;
-                    float x1 = pb_cx + pb_w * 0.5f;
-                    float y1 = pb_cy + pb_h * 0.5f;
-
-                    Object obj;
-                    obj.x = x0;
-                    obj.y = y0;
-                    obj.w = x1 - x0;
-                    obj.h = y1 - y0;
-                    obj.label = class_index;
-                    obj.prob = confidence;
-
-                    objects.push_back(obj);
                 }
             }
         }
@@ -326,7 +400,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Init(JNIEnv* e
 
     // init param
     {
-        int ret = yolov5.load_param(mgr, "yolov5s.param");
+        int ret = yolov5.load_param(mgr, "best.ncnn.param");
         if (ret != 0)
         {
             __android_log_print(ANDROID_LOG_DEBUG, "YoloV5Ncnn", "load_param failed");
@@ -336,7 +410,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Init(JNIEnv* e
 
     // init bin
     {
-        int ret = yolov5.load_model(mgr, "yolov5s.bin");
+        int ret = yolov5.load_model(mgr, "best.ncnn.bin");
         if (ret != 0)
         {
             __android_log_print(ANDROID_LOG_DEBUG, "YoloV5Ncnn", "load_model failed");
@@ -420,7 +494,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
 
         ex.set_vulkan_compute(use_gpu);
 
-        ex.input("images", in_pad);
+        ex.input("in0", in_pad);
 
         std::vector<Object> proposals;
 
@@ -429,7 +503,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
         // stride 8
         {
             ncnn::Mat out;
-            ex.extract("output", out);
+            ex.extract("out0", out);
 
             ncnn::Mat anchors(6);
             anchors[0] = 10.f;
@@ -448,7 +522,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
         // stride 16
         {
             ncnn::Mat out;
-            ex.extract("781", out);
+            ex.extract("out1", out);
 
             ncnn::Mat anchors(6);
             anchors[0] = 30.f;
@@ -467,7 +541,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
         // stride 32
         {
             ncnn::Mat out;
-            ex.extract("801", out);
+            ex.extract("out2", out);
 
             ncnn::Mat anchors(6);
             anchors[0] = 116.f;
@@ -517,16 +591,21 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
     }
 
     // objects to Obj[]
+//    static const char* class_names[] = {
+//        "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+//        "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+//        "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+//        "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+//        "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+//        "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+//        "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
+//        "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
+//        "hair drier", "toothbrush"
+//    };
+
     static const char* class_names[] = {
-        "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
-        "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
-        "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
-        "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
-        "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
-        "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
-        "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
-        "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
-        "hair drier", "toothbrush"
+            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+            "11", "12", "13", "20", "30", "dizhu"
     };
 
     jobjectArray jObjArray = env->NewObjectArray(objects.size(), objCls, NULL);
