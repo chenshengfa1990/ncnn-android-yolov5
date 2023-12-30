@@ -400,7 +400,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Init(JNIEnv* e
 
     // init param
     {
-        int ret = yolov5.load_param(mgr, "best.ncnn.param");
+        int ret = yolov5.load_param(mgr, "best2.ncnn.param");
         if (ret != 0)
         {
             __android_log_print(ANDROID_LOG_DEBUG, "YoloV5Ncnn", "load_param failed");
@@ -410,7 +410,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Init(JNIEnv* e
 
     // init bin
     {
-        int ret = yolov5.load_model(mgr, "best.ncnn.bin");
+        int ret = yolov5.load_model(mgr, "best2.ncnn.bin");
         if (ret != 0)
         {
             __android_log_print(ANDROID_LOG_DEBUG, "YoloV5Ncnn", "load_model failed");
@@ -604,8 +604,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
 //    };
 
     static const char* class_names[] = {
-            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-            "11", "12", "13", "20", "30", "dizhu"
+            "card1", "card10", "card_J", "card_Q", "card_K", "card2", "card_xiaowang", "card3", "card_dawang", "card4",
+            "card5", "card6", "card7", "card8", "card9", "buchu", "chupai", "dizhu"
     };
 
     jobjectArray jObjArray = env->NewObjectArray(objects.size(), objCls, NULL);

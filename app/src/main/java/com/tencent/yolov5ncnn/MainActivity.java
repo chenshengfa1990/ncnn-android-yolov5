@@ -153,7 +153,8 @@ public class MainActivity extends Activity
 
                 // draw filled text inside image
                 {
-                    String text = objects[i].label + " = " + String.format("%.1f", objects[i].prob * 100) + "%";
+//                    String text = objects[i].label + " = " + String.format("%.1f", objects[i].prob * 100) + "%";
+                    String text = objects[i].label;
 
                     float text_width = textpaint.measureText(text);
                     float text_height = -textpaint.ascent() + textpaint.descent();
