@@ -612,16 +612,18 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
 
     for (size_t i=0; i<objects.size(); i++)
     {
-        jobject jObj = env->NewObject(objCls, constructortorId, thiz);
+        if (objects[i].label < (sizeof(class_names) / sizeof(class_names[0]))) {
+            jobject jObj = env->NewObject(objCls, constructortorId, thiz);
 
-        env->SetFloatField(jObj, xId, objects[i].x);
-        env->SetFloatField(jObj, yId, objects[i].y);
-        env->SetFloatField(jObj, wId, objects[i].w);
-        env->SetFloatField(jObj, hId, objects[i].h);
-        env->SetObjectField(jObj, labelId, env->NewStringUTF(class_names[objects[i].label]));
-        env->SetFloatField(jObj, probId, objects[i].prob);
+            env->SetFloatField(jObj, xId, objects[i].x);
+            env->SetFloatField(jObj, yId, objects[i].y);
+            env->SetFloatField(jObj, wId, objects[i].w);
+            env->SetFloatField(jObj, hId, objects[i].h);
+            env->SetObjectField(jObj, labelId, env->NewStringUTF(class_names[objects[i].label]));
+            env->SetFloatField(jObj, probId, objects[i].prob);
 
-        env->SetObjectArrayElement(jObjArray, i, jObj);
+            env->SetObjectArrayElement(jObjArray, i, jObj);
+        }
     }
 
     double elasped = ncnn::get_current_time() - start_time;
