@@ -604,8 +604,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
 //    };
 
     static const char* class_names[] = {
-            "card1", "card10", "card_J", "card_Q", "card_K", "card2", "card_xiaowang", "card3", "card_dawang", "card4",
-            "card5", "card6", "card7", "card8", "card9", "buchu", "chupai", "dizhu"
+            "A", "10", "J", "Q", "K", "2", "xw", "3", "dw", "4",
+            "5", "6", "7", "8", "9", "buchu", "chupai", "dizhu"
     };
 
     jobjectArray jObjArray = env->NewObjectArray(objects.size(), objCls, NULL);
