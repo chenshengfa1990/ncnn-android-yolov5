@@ -1,6 +1,11 @@
 apply plugin: 'com.android.application'
+def STORE_FILE = "${rootDir}/yolo.keystore"
+def STORE_PWD = "fa123456"
+def STORE_KEY_ALIAS = "yolo"
+def STORE_KEY_PWD = "fa123456"
 
 android {
+
     compileSdkVersion 24
     buildToolsVersion "29.0.2"
 
@@ -22,4 +27,22 @@ android {
         }
     }
     ndkVersion '22.1.7171670'
+
+    signingConfigs {
+        release {
+            keyAlias STORE_KEY_ALIAS
+            keyPassword STORE_KEY_PWD
+            storeFile file(STORE_FILE)
+            storePassword STORE_PWD
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
 }

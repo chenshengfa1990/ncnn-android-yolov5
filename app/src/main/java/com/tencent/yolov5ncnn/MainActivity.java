@@ -89,8 +89,9 @@ public class MainActivity extends Activity
                 if (yourSelectedImage == null)
                     return;
 
+                Log.i("chenshengfa", "GPU before detect");
                 YoloV5Ncnn.Obj[] objects = yolov5ncnn.Detect(yourSelectedImage, true);
-
+                Log.i("chenshengfa", "GPU after detect");
                 showObjects(objects);
             }
         });
@@ -210,7 +211,7 @@ public class MainActivity extends Activity
         BitmapFactory.decodeStream(getContentResolver().openInputStream(selectedImage), null, o);
 
         // The new size we want to scale to
-        final int REQUIRED_SIZE = 640;
+        final int REQUIRED_SIZE = 1280;
 
         // Find the correct scale value. It should be the power of 2.
         int width_tmp = o.outWidth, height_tmp = o.outHeight;

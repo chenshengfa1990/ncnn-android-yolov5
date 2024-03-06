@@ -400,7 +400,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Init(JNIEnv* e
 
     // init param
     {
-        int ret = yolov5.load_param(mgr, "best2.ncnn.param");
+        int ret = yolov5.load_param(mgr, "best9.ncnn.param");
         if (ret != 0)
         {
             __android_log_print(ANDROID_LOG_DEBUG, "YoloV5Ncnn", "load_param failed");
@@ -410,7 +410,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Init(JNIEnv* e
 
     // init bin
     {
-        int ret = yolov5.load_model(mgr, "best2.ncnn.bin");
+        int ret = yolov5.load_model(mgr, "best9.ncnn.bin");
         if (ret != 0)
         {
             __android_log_print(ANDROID_LOG_DEBUG, "YoloV5Ncnn", "load_model failed");
@@ -453,7 +453,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
         return NULL;
 
     // ncnn from bitmap
-    const int target_size = 640;
+    const int target_size = 1280;
 
     // letterbox pad to multiple of 32
     int w = width;
@@ -484,8 +484,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
     // yolov5
     std::vector<Object> objects;
     {
-        const float prob_threshold = 0.25f;
-        const float nms_threshold = 0.45f;
+        const float prob_threshold = 0.5f;
+        const float nms_threshold = 0.5f;
 
         const float norm_vals[3] = {1 / 255.f, 1 / 255.f, 1 / 255.f};
         in_pad.substract_mean_normalize(0, norm_vals);
@@ -605,7 +605,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_yolov5ncnn_YoloV5Ncnn_Detect(JNI
 
     static const char* class_names[] = {
             "A", "10", "J", "Q", "K", "2", "xw", "3", "dw", "4",
-            "5", "6", "7", "8", "9", "buchu", "chupai", "dizhu"
+            "5", "6", "7", "8", "9", "buchu", "chupai", "dizhu", "tuyou_buchu", "tuyou_dizhu", "weile_buchu", "weile_dizhu", "yaobuqi"
     };
 
     jobjectArray jObjArray = env->NewObjectArray(objects.size(), objCls, NULL);
